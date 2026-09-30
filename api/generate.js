@@ -25,14 +25,19 @@ module.exports = async (req, res) => {
   try {
     let last = { status: 502, detail: '' };
     for (const model of models) {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      let r;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 4000 },
         }),
-      });
+        });
+        if (r.status !== 503) break;
+        await new Promise((ok) => setTimeout(ok, 1000)); // brief pause, then retry once
+      }
       if (r.ok) {
         const j = await r.json();
         const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
@@ -44,8 +49,8 @@ module.exports = async (req, res) => {
       let detail = '';
       try { const e = await r.json(); detail = String((e.error && e.error.message) || '').slice(0, 300); } catch (x) {}
       last = { status: r.status, detail: model + ': ' + detail };
-      if (r.status === 404 || r.status === 400) continue; // model unavailable, try the next one
-      break; // key or quota problem: fallbacks won't help
+      if (r.status === 401 || r.status === 403) break; // bad key: fallbacks won't help
+      continue; // model missing, busy (503) or over quota (429): try the next model
     }
     return res.status(last.status === 429 ? 429 : 502).json({ error: 'Gemini error ' + last.status, detail: last.detail });
   } catch (e) {
