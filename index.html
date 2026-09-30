@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PromptForge – AI Content Generator</title>
+<meta name="description" content="AI content generator with a prompt library and prompt optimizer.">
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1b1b22;--mut:#6b6b78;--line:#e3e0d8;--acc:#5b3df5;--acc2:#ff6a3d;--accbg:#ece8ff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121218;--card:#1c1c26;--ink:#f1f0f7;--mut:#9a9aab;--line:#2c2c3a;--acc:#8b75ff;--acc2:#ff8a63;--accbg:#2a2450}}
+:root[data-theme="dark"]{--bg:#121218;--card:#1c1c26;--ink:#f1f0f7;--mut:#9a9aab;--line:#2c2c3a;--acc:#8b75ff;--acc2:#ff8a63;--accbg:#2a2450}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h1{margin:0;font-size:26px;letter-spacing:-.5px}h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);font-size:13px;margin-top:2px}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:999px;cursor:pointer;font:inherit;font-size:14px}
+nav button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.types{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.t{border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px;cursor:pointer;text-align:left;color:var(--ink);font:inherit;font-size:13px}
+.t b{display:block;font-size:20px}.t.on{border-color:var(--acc);background:var(--accbg)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:90px;resize:vertical}
+.btn{border:0;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#fff;padding:11px 20px;border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:wait}
+.ghost{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 11px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+pre{white-space:pre-wrap;word-wrap:break-word;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font:13px/1.5 ui-monospace,Menlo,monospace;margin:8px 0;overflow-x:auto}
+.out{white-space:pre-wrap;line-height:1.65}
+.tag{display:inline-block;background:var(--accbg);color:var(--acc);border-radius:6px;padding:1px 8px;font-size:12px;margin-right:6px}
+.mut{color:var(--mut);font-size:13px}.err{color:#d33}
+details summary{cursor:pointer;color:var(--mut);font-size:13px;margin:10px 0 0}
+h3{margin:0 0 6px;font-size:16px}
+.hide{display:none}
+</style></head><body><div class="wrap">
+<header><div><h1>⚡ <span>PromptForge</span></h1><div class="sub">AI content generator · prompt library · prompt optimizer</div></div>
+<button class="ghost" id="theme">🌓 Theme</button></header>
+<nav id="tabs"></nav>
+
+<section id="p-gen">
+ <div class="card"><label>1 · What are you creating?</label><div class="types" id="types"></div></div>
+ <div class="card">
+  <div class="grid">
+   <div style="grid-column:1/-1"><label>Topic / what it's about</label><textarea id="topic" placeholder="e.g. Why every network admin should learn basic scripting"></textarea></div>
+   <div><label>Audience</label><input id="aud" value="Hiring managers and IT professionals"></div>
+   <div><label>Tone</label><select id="tone"><option>Professional</option><option>Friendly</option><option>Confident</option><option>Persuasive</option><option>Casual</option><option>Technical</option><option>Inspiring</option></select></div>
+   <div><label>Length</label><select id="len"><option>Short (~100 words)</option><option selected>Medium (~250 words)</option><option>Long (~600 words)</option></select></div>
+   <div><label>Extra instructions (optional)</label><input id="extra" placeholder="e.g. include a real-world example"></div>
+  </div>
+  <details><summary>View the prompt that will be sent</summary><pre id="preview"></pre></details>
+  <div class="row" style="margin-top:12px"><button class="btn" id="go">✨ Generate</button><span class="mut" id="stat"></span></div>
+ </div>
+ <div class="card hide" id="res"><div class="row" style="justify-content:space-between"><h3>Result</h3>
+  <div class="row"><button class="ghost" id="copy">Copy</button><button class="ghost" id="dl">Download</button></div></div>
+  <div class="out" id="out"></div>
+  <div class="row" style="margin-top:12px"><span class="mut">Refine:</span><span class="row" id="ref"></span></div></div>
+</section>
+
+<section id="p-opt" class="hide">
+ <div class="card"><h3>🔧 Prompt Optimizer</h3><div class="mut" style="margin-bottom:10px">Paste a rough prompt. The optimizer diagnoses it, rewrites it using role, context, task, format and constraints, and explains every change – perfect evidence for your prompt-engineering case study.</div>
+  <textarea id="rough" placeholder="e.g. write something about cybersecurity for my website"></textarea>
+  <div class="row" style="margin-top:10px"><button class="btn" id="optgo">Optimize prompt</button><span class="mut" id="ostat"></span></div></div>
+ <div class="card hide" id="ores"></div>
+</section>
+
+<section id="p-lib" class="hide"><div class="mut" style="margin-bottom:10px">Every generator type runs on these reusable templates. Placeholders in {braces} are filled from the form.</div><div id="lib"></div></section>
+<section id="p-his" class="hide"><div class="row" style="justify-content:space-between;margin-bottom:10px"><span class="mut">Saved on this device only.</span><button class="ghost" id="clr">Clear</button></div><div id="his"></div></section>
+<p class="mut" style="text-align:center;margin-top:24px">Powered by Google Gemini. Do not enter personal or confidential information.</p>
+</div>
+<script>
+const T=[
+{id:'blog',n:'Blog post',i:'✍️',p:`Act as an experienced technology blogger.
+Write a blog post about: {topic}.
+Audience: {audience}. Tone: {tone}. Length: {length}.
+Structure: a catchy title, a hook intro, 3-4 subheadings with concise paragraphs, a practical takeaway, and a closing call to action.
+{extra}`},
+{id:'email',n:'Email',i:'📧',p:`Act as a professional communications specialist.
+Write an email about: {topic}.
+Recipient: {audience}. Tone: {tone}. Length: {length}.
+Include a clear subject line, a greeting, a focused body with one main ask, and a polite sign-off. Avoid clichés and filler.
+{extra}`},
+{id:'linkedin',n:'LinkedIn post',i:'💼',p:`Act as a LinkedIn content strategist.
+Write a LinkedIn post about: {topic}.
+Audience: {audience}. Tone: {tone}. Length: {length}.
+Start with a scroll-stopping first line, use short paragraphs, add one concrete insight or story, end with a question to drive comments, and finish with 3-5 relevant hashtags.
+{extra}`},
+{id:'code',n:'Code snippet',i:'💻',p:`Act as a senior software engineer.
+Write code that does the following: {topic}.
+Context/audience: {audience}. Style: {tone}. Size: {length}.
+Provide the code in a single block, add brief comments, then a short explanation of how it works and how to run it. Mention any edge cases.
+{extra}`},
+{id:'cover',n:'Cover letter',i:'📄',p:`Act as a career coach who writes compelling cover letters.
+Write a cover letter for: {topic}.
+Addressed to: {audience}. Tone: {tone}. Length: {length}.
+Open with genuine interest in the role, connect 2-3 specific skills or projects to the employer's needs, show measurable impact where possible, and close confidently.
+{extra}`},
+{id:'notes',n:'Study notes',i:'🧠',p:`Act as an expert tutor.
+Create study notes on: {topic}.
+Learner: {audience}. Tone: {tone}. Length: {length}.
+Format: key definitions, main concepts as bullet points, one analogy, a mini example, and 3 self-test questions with answers.
+{extra}`},
+{id:'social',n:'Social captions',i:'📱',p:`Act as a social media copywriter.
+Write 5 different captions about: {topic}.
+Audience: {audience}. Tone: {tone}. Each caption: {length}.
+Vary the hook style (question, bold claim, story, stat, tip), add suitable emojis and hashtags, and label each version.
+{extra}`},
+{id:'readme',n:'Project README',i:'📦',p:`Act as an open-source maintainer.
+Write a README.md for this project: {topic}.
+Audience: {audience}. Tone: {tone}. Length: {length}.
+Include: title and one-line pitch, features, tech stack, setup steps, usage example, screenshots placeholder, and future improvements.
+{extra}`}];
+const $=id=>document.getElementById(id);let cur=T[0],last='',meta={};
+const store={get(){try{return JSON.parse(localStorage.getItem('pf_h')||'[]')}catch(e){return[]}},set(v){try{localStorage.setItem('pf_h',JSON.stringify(v))}catch(e){}}};
+// tabs
+const tabs=[['gen','✨ Generate'],['opt','🔧 Optimizer'],['lib','📚 Prompt Library'],['his','🕘 History']];
+$('tabs').innerHTML=tabs.map(([k,l])=>`<button data-k="${k}">${l}</button>`).join('');
+function show(k){tabs.forEach(([t])=>{$('p-'+t).classList.toggle('hide',t!==k)});[...$('tabs').children].forEach(b=>b.classList.toggle('on',b.dataset.k===k));if(k==='his')renderH()}
+$('tabs').onclick=e=>{if(e.target.dataset.k)show(e.target.dataset.k)};show('gen');
+$('theme').onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).getPropertyValue('--bg').trim()==='#121218';r.dataset.theme=d?'light':'dark'};
+// types
+function drawTypes(){$('types').innerHTML=T.map(t=>`<button class="t ${t.id===cur.id?'on':''}" data-id="${t.id}"><b>${t.i}</b>${t.n}</button>`).join('');prev()}
+$('types').onclick=e=>{const b=e.target.closest('.t');if(b){cur=T.find(t=>t.id===b.dataset.id);drawTypes()}};
+function build(){const v={topic:$('topic').value.trim()||'[your topic]',audience:$('aud').value,tone:$('tone').value,length:$('len').value,extra:$('extra').value.trim()};
+ return cur.p.replace(/\{(\w+)\}/g,(_,k)=>v[k]).trim()}
+function prev(){$('preview').textContent=build()}
+['topic','aud','tone','len','extra'].forEach(i=>$(i).addEventListener('input',prev));
+// generate
+async function run(prompt,onText){
+ if(typeof claude!=='undefined'&&claude&&claude.use){try{const s=await claude.use('sample');if(s)return s(prompt,{onText,cache:false})}catch(e){}}
+ return callApi(prompt,onText)}
+async function callApi(prompt,onText){
+ let r;try{r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})})}catch(e){throw{code:'server_error'}}
+ if(r.status===429)throw{code:'rate_limited'};
+ if(!r.ok)throw{code:'server_error'};
+ const j=await r.json();if(onText)onText({text:j.text});return{text:j.text}}
+async function runJson(p){const t=(await run(p)).text.replace(/```json|```/g,'').trim();return JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1))}
+function emsg(e){return e&&e.code==='not_granted'?'Permission needed to ask Claude – try again and allow it.':e&&e.code==='rate_limited'?'Too many requests right now. Please wait a few minutes and retry.':e&&e.code==='server_error'?'The generator is temporarily unavailable. Please try again shortly.':'Something went wrong. Please try again.'}
+$('go').onclick=async()=>{if(!$('topic').value.trim()){$('stat').textContent='Add a topic first.';return}
+ const p=build();meta={type:cur.n,topic:$('topic').value.trim()};$('go').disabled=true;$('stat').textContent='Thinking…';$('stat').className='mut';$('res').classList.remove('hide');$('out').textContent='';
+ try{const r=await run(p+'\n\nReturn only the finished content, no preamble.',({text})=>{$('out').textContent=text;$('stat').textContent='Writing…'});last=r.text;$('out').textContent=last;$('stat').textContent='Done ✓';save(meta.type,meta.topic,p,last)}
+ catch(e){$('stat').textContent=emsg(e);$('stat').className='err'}$('go').disabled=false};
+const R=['Shorter','More formal','More casual','Add a hook','Simplify','Translate to Afrikaans'];
+$('ref').innerHTML=R.map(r=>`<button class="ghost">${r}</button>`).join('');
+$('ref').onclick=async e=>{if(e.target.tagName!=='BUTTON'||!last)return;const ins=e.target.textContent;$('stat').textContent='Refining…';$('stat').className='mut';$('go').disabled=true;
+ try{const r=await run(`Rewrite the content below with this change: "${ins}". Keep the meaning and format. Return only the rewritten content.\n\n---\n${last}`,({text})=>{$('out').textContent=text});last=r.text;$('out').textContent=last;$('stat').textContent='Refined ✓ ('+ins+')';save(meta.type+' · '+ins,meta.topic,'Refine: '+ins,last)}catch(er){$('stat').textContent=emsg(er);$('stat').className='err'}$('go').disabled=false};
+async function copy(t,b){try{await navigator.clipboard.writeText(t);const o=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=o,1200)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(x){}a.remove()}}
+$('copy').onclick=e=>copy(last,e.target);
+$('dl').onclick=async()=>{const fn=(meta.type||'content').toLowerCase().replace(/\W+/g,'-')+'.txt';try{if(typeof claude!=='undefined'&&claude&&claude.use){const d=await claude.use('downloads');if(d){await d.save({filename:fn,data:last});return}}}catch(e){}const u=URL.createObjectURL(new Blob([last],{type:'text/plain'})),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),500)};
+function save(type,topic,prompt,out){const h=store.get();h.unshift({type,topic,prompt,out,t:new Date().toLocaleString()});store.set(h.slice(0,20))}
+// optimizer
+$('optgo').onclick=async()=>{const r=$('rough').value.trim();if(!r)return;$('optgo').disabled=true;$('ostat').textContent='Analysing…';$('ostat').className='mut';
+ try{ const j=await runJson(`You are a prompt engineering coach. Analyse this rough prompt and improve it.\nROUGH PROMPT: """${r}"""\nReturn ONLY JSON: {"score_before":number 1-10,"score_after":number 1-10,"issues":[up to 4 short strings],"improved":"the full improved prompt using role, context, task, format, constraints","changes":[up to 4 short strings explaining what was added and why]}`);
+ const li=a=>'<ul>'+(a||[]).map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>';
+ $('ores').classList.remove('hide');$('ores').innerHTML=`<div class="row"><span class="tag">Before: ${j.score_before}/10</span><span class="tag">After: ${j.score_after}/10</span></div><h3 style="margin-top:12px">Issues found</h3>${li(j.issues)}<h3>Improved prompt</h3><pre>${esc(j.improved)}</pre><button class="ghost" id="cp2">Copy improved prompt</button><h3 style="margin-top:14px">What changed & why</h3>${li(j.changes)}`;
+ $('cp2').onclick=e=>copy(j.improved,e.target);$('ostat').textContent='Done ✓';save('Optimizer',r.slice(0,60),r,j.improved)}
+ catch(e){$('ostat').textContent=emsg(e);$('ostat').className='err'}$('optgo').disabled=false};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+// library
+$('lib').innerHTML=T.map(t=>`<div class="card"><div class="row" style="justify-content:space-between"><h3>${t.i} ${t.n}</h3><div class="row"><button class="ghost" data-c="${t.id}">Copy</button><button class="ghost" data-u="${t.id}">Use in generator</button></div></div><pre>${esc(t.p)}</pre></div>`).join('');
+$('lib').onclick=e=>{const c=e.target.dataset.c,u=e.target.dataset.u;if(c)copy(T.find(t=>t.id===c).p,e.target);if(u){cur=T.find(t=>t.id===u);drawTypes();show('gen')}};
+// history
+function renderH(){const h=store.get();$('his').innerHTML=h.length?h.map((x,i)=>`<div class="card"><span class="tag">${esc(x.type)}</span><span class="mut">${esc(x.t)}</span><div style="margin:6px 0"><b>${esc(x.topic)}</b></div><details><summary>Prompt used</summary><pre>${esc(x.prompt)}</pre></details><details><summary>Output</summary><pre>${esc(x.out)}</pre></details><button class="ghost" data-i="${i}" style="margin-top:8px">Copy output</button></div>`).join(''):'<div class="card mut">Nothing yet – generate something!</div>'}
+$('his').onclick=e=>{if(e.target.dataset.i!==undefined)copy(store.get()[e.target.dataset.i].out,e.target)};
+$('clr').onclick=()=>{store.set([]);renderH()};
+drawTypes();
+</script></body></html>
